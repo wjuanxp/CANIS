@@ -76,12 +76,12 @@ export interface SampleCreate {
 }
 
 // Spectrum Types
-export type SpectroscopicTechnique = 'UV-Vis' | 'IR' | 'Raman' | 'LIBS' | 'XRF' | 'XRD';
+export type SpectroscopicTechnique = 'UV-Vis' | 'IR' | 'Raman' | 'LIBS' | 'XRF' | 'XRD' | 'Near-IR' | 'Unknown';
 
 export interface Spectrum {
-  id: string;
-  sample_id: string;
-  technique: SpectroscopicTechnique;
+  id: number;
+  sample_id: number;
+  technique: string;
   filename: string;
   wavelengths: number[];
   intensities: number[];
@@ -166,6 +166,15 @@ export interface UploadedFile {
   size: number;
   type: string;
   content?: string | ArrayBuffer;
+}
+
+export interface FileUploadResponse {
+  success: boolean;
+  message: string;
+  spectrum_id?: number;
+  filename: string;
+  technique: string;
+  data_points: number;
 }
 
 // Analysis Method Types

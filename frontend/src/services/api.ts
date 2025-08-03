@@ -141,7 +141,7 @@ class ApiService {
     return this.request<Project[]>('GET', '/projects/');
   }
 
-  async getProject(projectId: string): Promise<Project> {
+  async getProject(projectId: number): Promise<Project> {
     return this.request<Project>('GET', `/projects/${projectId}`);
   }
 
@@ -149,11 +149,11 @@ class ApiService {
     return this.request<Project>('POST', '/projects/', projectData);
   }
 
-  async updateProject(projectId: string, projectData: Partial<Project>): Promise<Project> {
+  async updateProject(projectId: number, projectData: Partial<Project>): Promise<Project> {
     return this.request<Project>('PUT', `/projects/${projectId}`, projectData);
   }
 
-  async deleteProject(projectId: string): Promise<void> {
+  async deleteProject(projectId: number): Promise<void> {
     return this.request<void>('DELETE', `/projects/${projectId}`);
   }
 
@@ -163,7 +163,7 @@ class ApiService {
     return this.request<Sample[]>('GET', url);
   }
 
-  async getSample(sampleId: string): Promise<Sample> {
+  async getSample(sampleId: number): Promise<Sample> {
     return this.request<Sample>('GET', `/samples/${sampleId}`);
   }
 
@@ -171,11 +171,11 @@ class ApiService {
     return this.request<Sample>('POST', '/samples/', sampleData);
   }
 
-  async updateSample(sampleId: string, sampleData: Partial<Sample>): Promise<Sample> {
+  async updateSample(sampleId: number, sampleData: Partial<Sample>): Promise<Sample> {
     return this.request<Sample>('PUT', `/samples/${sampleId}`, sampleData);
   }
 
-  async deleteSample(sampleId: string): Promise<void> {
+  async deleteSample(sampleId: number): Promise<void> {
     return this.request<void>('DELETE', `/samples/${sampleId}`);
   }
 
@@ -185,7 +185,7 @@ class ApiService {
     return this.request<Spectrum[]>('GET', url);
   }
 
-  async getSpectrum(spectrumId: string): Promise<Spectrum> {
+  async getSpectrum(spectrumId: number): Promise<Spectrum> {
     return this.request<Spectrum>('GET', `/spectra/${spectrumId}`);
   }
 
@@ -193,10 +193,10 @@ class ApiService {
     return this.request<Spectrum>('POST', '/spectra/', spectrumData);
   }
 
-  async uploadSpectrum(file: File, sampleId: string): Promise<Spectrum> {
+  async uploadSpectrum(file: File, sampleId: number): Promise<Spectrum> {
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('sample_id', sampleId);
+    formData.append('sample_id', sampleId.toString());
 
     const response = await this.api.post<ApiResponse<Spectrum>>('/spectra/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
@@ -209,7 +209,7 @@ class ApiService {
     }
   }
 
-  async deleteSpectrum(spectrumId: string): Promise<void> {
+  async deleteSpectrum(spectrumId: number): Promise<void> {
     return this.request<void>('DELETE', `/spectra/${spectrumId}`);
   }
 

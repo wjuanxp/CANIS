@@ -263,7 +263,7 @@ export const useSpectrumStore = create<SpectrumState>((set, get) => ({
     }
   },
   
-  deleteSpectrum: async (spectrumId: string) => {
+  deleteSpectrum: async (spectrumId: number) => {
     try {
       await apiService.deleteSpectrum(spectrumId);
       set(state => ({

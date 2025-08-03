@@ -4,30 +4,50 @@ An open-source chemical analytical data management and analysis platform designe
 
 ## Features
 
-- **Modern Web Interface**: React + TypeScript with Material-UI
-- **REST API**: FastAPI backend with SQLAlchemy ORM
-- **Multi-technique Support**: UV-Vis, IR, Raman, LIBS, X-ray spectroscopy
-- **Data Management**: Project-based organization with samples and spectra
-- **Analysis Tools**: Built-in spectroscopic analysis algorithms
-- **File Format Support**: JCAMP-DX, CSV, and manufacturer formats
-- **Responsive Design**: Works on desktop and mobile devices
+### Core Functionality
+- **Modern Web Interface**: React + TypeScript with Material-UI components
+- **REST API**: High-performance FastAPI backend with SQLAlchemy ORM
+- **Multi-technique Support**: UV-Vis, IR, Raman, LIBS, X-ray spectroscopy with automatic detection
+- **Data Management**: Project-based organization with samples and spectra hierarchy
+- **File Format Support**: JCAMP-DX, CSV, and other analytical data formats
+- **Responsive Design**: Optimized for desktop and mobile devices
+
+### Data Management
+- **Project Management**: Create, edit, and delete projects with sample/spectra counts
+- **Sample Management**: Organize samples within projects with metadata tracking
+- **Spectrum Management**: Upload, view, and manage spectroscopic data
+- **File Upload**: Drag-and-drop file upload with format validation and duplicate detection
+- **Comprehensive Search**: Search across all metadata fields, filenames, techniques, and dates
+
+### Visualization & Analysis
+- **Interactive Spectral Viewer**: Landscape-oriented plots optimized for spectroscopic data
+- **Technique-Specific Plotting**: Automatic axis labeling based on spectroscopic technique
+- **Metadata Display**: Complete metadata extraction and display from uploaded files
+- **Real-time Visualization**: Responsive plotting with zoom, pan, and export capabilities
+
+### Technical Features
+- **Robust File Parsing**: Advanced JCAMP-DX parser with error handling
+- **Automatic Technique Detection**: Smart algorithm to identify spectroscopic technique
+- **Data Validation**: Comprehensive input validation and error reporting
+- **Performance Optimized**: Efficient data handling for large spectral datasets
 
 ## Technology Stack
 
 ### Backend
 - **FastAPI** - High-performance Python web framework
-- **SQLAlchemy** - SQL toolkit and ORM
-- **PostgreSQL** - Primary database
+- **SQLAlchemy** - SQL toolkit and ORM  
+- **PostgreSQL/SQLite** - Database support (development uses SQLite)
 - **Alembic** - Database migration tool
-- **NumPy/SciPy** - Scientific computing
-- **Plotly** - Interactive visualizations
+- **NumPy/SciPy** - Scientific computing and data processing
+- **JCAMP** - JCAMP-DX file format parser
+- **Pydantic** - Data validation and serialization
 
 ### Frontend
-- **React 18** - Modern UI framework
-- **TypeScript** - Type-safe JavaScript
-- **Material-UI (MUI)** - React component library
-- **React Router** - Client-side routing
-- **Axios** - HTTP client
+- **React 18** - Modern UI framework with hooks
+- **TypeScript** - Type-safe JavaScript development
+- **Material-UI (MUI)** - Comprehensive React component library
+- **Plotly.js** - Interactive scientific plotting and visualization
+- **React Context** - State management for global application state
 
 ## Quick Start
 
@@ -223,21 +243,37 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 See [CLAUDE.md](CLAUDE.md) for detailed project roadmap and technical specifications.
 
-### Phase 1 (Current)
-- ✅ Basic project structure
-- ✅ Database models and API endpoints
-- ✅ React frontend with Material-UI
-- 🚧 File upload and spectral data visualization
-- 🚧 Basic analysis algorithms
+### Phase 1 (Completed ✅)
+- ✅ **Project Management**: Full CRUD operations for projects with metadata
+- ✅ **Sample Management**: Complete sample organization within projects  
+- ✅ **Spectrum Management**: Upload, view, and manage spectroscopic data
+- ✅ **File Upload System**: Drag-and-drop with validation and duplicate detection
+- ✅ **JCAMP-DX Parser**: Robust parsing with error handling and metadata extraction
+- ✅ **Interactive Visualization**: Landscape-oriented spectral viewer with technique-specific labeling
+- ✅ **Search Functionality**: Comprehensive search across all metadata and properties
+- ✅ **React Frontend**: Complete Material-UI interface with responsive design
+- ✅ **FastAPI Backend**: High-performance API with SQLAlchemy ORM
 
-### Phase 2
-- Multi-technique support
-- Advanced analytics
-- User management
-- Performance optimization
+### Phase 2 (Next)
+- 🔄 **Advanced Analytics**: PLS regression, multivariate analysis, peak detection
+- 🔄 **User Authentication**: JWT-based authentication and role-based access control
+- 🔄 **Batch Processing**: Multiple file upload and batch analysis capabilities
+- 🔄 **Export Features**: PDF reports, data export in multiple formats
+- 🔄 **Performance Optimization**: Caching, database indexing, and query optimization
 
-### Phase 3
-- Community features
-- Plugin architecture
-- Mobile app
-- Cloud deployment
+### Phase 3 (Future)
+- 📋 **Plugin Architecture**: Extensible analysis methods and custom algorithms
+- 📋 **Instrument Integration**: Direct instrument communication and data acquisition
+- 📋 **Cloud Deployment**: Docker containerization and cloud-native features
+- 📋 **Mobile App**: Progressive Web App (PWA) for mobile access
+- 📋 **Community Features**: User collaboration and data sharing capabilities
+
+## Recent Updates
+
+### Latest Features Added ✨
+- **Enhanced Spectrum Viewer**: Landscape orientation with optimized layout for spectroscopic data
+- **Comprehensive Search**: Search functionality across all metadata, filenames, techniques, and dates
+- **JCAMP-DX Improvements**: Fixed NumPy array handling and improved error messages
+- **Project Management**: Complete project lifecycle management with sample/spectra counts
+- **Sample Organization**: Full sample management within project hierarchy
+- **UI/UX Improvements**: Default tab selection, improved layouts, and better responsive design

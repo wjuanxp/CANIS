@@ -2,6 +2,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.api.api_v1.api import api_router
+import logging
+
+# Configure logging to show INFO level messages
+logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(
     title="Open Analytical Platform API",

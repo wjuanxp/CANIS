@@ -27,11 +27,16 @@ import {
   Delete,
   Refresh,
   Search,
-  Clear
+  Clear,
+  Analytics,
+  Download
 } from '@mui/icons-material';
 import FileUpload from '../components/FileUpload';
 import SpectrumViewer from '../components/SpectrumViewer';
 import { Spectrum, Sample, FileUploadResponse } from '../types';
+import { useNavigate } from 'react-router-dom';
+import { apiService } from '../services/api';
+import { useNotificationStore } from '../services/store';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -56,6 +61,8 @@ function TabPanel(props: TabPanelProps) {
 }
 
 const Spectra: React.FC = () => {
+  const navigate = useNavigate();
+  const { addNotification } = useNotificationStore();
   const [tabValue, setTabValue] = useState(1);
   const [spectra, setSpectra] = useState<Spectrum[]>([]);
   const [samples, setSamples] = useState<Sample[]>([]);
@@ -74,11 +81,7 @@ const Spectra: React.FC = () => {
   const loadSpectra = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/v1/spectra/');
-      if (!response.ok) {
-        throw new Error('Failed to load spectra');
-      }
-      const data = await response.json();
+      const data = await apiService.getSpectra();
       setSpectra(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load spectra');
@@ -89,14 +92,12 @@ const Spectra: React.FC = () => {
 
   const loadSamples = async () => {
     try {
-      const response = await fetch('/api/v1/samples/');
-      if (!response.ok) {
-        throw new Error('Failed to load samples');
-      }
-      const data = await response.json();
+      const data = await apiService.getSamples();
       setSamples(data);
     } catch (err) {
       console.error('Failed to load samples:', err);
+      // Show error to user instead of silent failure
+      setError(`Failed to load samples: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
   };
 
@@ -116,24 +117,81 @@ const Spectra: React.FC = () => {
     setViewerOpen(true);
   };
 
+  const handleAnalyzeSpectrum = (spectrum: Spectrum) => {
+    navigate('/analysis', { state: { spectrum } });
+  };
+
   const handleDeleteSpectrum = async (spectrumId: number) => {
     if (!window.confirm('Are you sure you want to delete this spectrum?')) {
       return;
     }
 
     try {
-      const response = await fetch(`/api/v1/spectra/${spectrumId}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete spectrum');
-      }
-
-      // Reload spectra list
+      await apiService.deleteSpectrum(spectrumId);
+      
+      // Reload spectra list to reflect the deletion
       loadSpectra();
+      
+      // Show success notification
+      addNotification({
+        id: `delete-${Date.now()}`,
+        type: 'success',
+        message: 'Spectrum deleted successfully',
+        timestamp: new Date().toISOString()
+      });
+      
+      // Clear any existing error
+      setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete spectrum');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete spectrum';
+      setError(errorMessage);
+      
+      // Show error notification
+      addNotification({
+        id: `delete-error-${Date.now()}`,
+        type: 'error',
+        message: errorMessage,
+        timestamp: new Date().toISOString()
+      });
+    }
+  };
+
+  const handleDownloadSpectrum = async (spectrumId: number, filename: string) => {
+    try {
+      const blob = await apiService.exportSpectrum(spectrumId.toString(), 'jcamp');
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Generate filename with .jdx extension
+      const downloadFilename = filename.replace(/\.[^/.]+$/, '') + '.jdx';
+      link.download = downloadFilename;
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      // Show success notification
+      addNotification({
+        id: `download-${Date.now()}`,
+        type: 'success',
+        message: `Spectrum downloaded as ${downloadFilename}`,
+        timestamp: new Date().toISOString()
+      });
+      
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to download spectrum';
+      
+      // Show error notification
+      addNotification({
+        id: `download-error-${Date.now()}`,
+        type: 'error',
+        message: errorMessage,
+        timestamp: new Date().toISOString()
+      });
     }
   };
 
@@ -242,10 +300,26 @@ const Spectra: React.FC = () => {
             <Typography variant="h6" gutterBottom>
               Upload Spectral Data Files
             </Typography>
-            <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
+            <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
               Upload CSV, JCAMP-DX, or other supported spectral data files. 
               Files will be automatically parsed and the spectroscopic technique will be detected.
             </Typography>
+            
+            {samples.length === 0 ? (
+              <Alert severity="warning" sx={{ mb: 3 }}>
+                <Typography variant="body2">
+                  <strong>No samples found.</strong> You need to create a sample first before uploading spectra. 
+                  Go to the Samples page to create a new sample, then return here to upload files.
+                </Typography>
+              </Alert>
+            ) : (
+              <Alert severity="info" sx={{ mb: 3 }}>
+                <Typography variant="body2">
+                  <strong>Step 1:</strong> Select the sample that this spectrum belongs to.<br/>
+                  <strong>Step 2:</strong> Upload your spectral data file.
+                </Typography>
+              </Alert>
+            )}
             
             <FileUpload 
               onUploadSuccess={handleUploadSuccess}
@@ -368,9 +442,26 @@ const Spectra: React.FC = () => {
                     />
                   </ListItemButton>
                   <IconButton
+                    onClick={() => handleAnalyzeSpectrum(spectrum)}
+                    color="primary"
+                    sx={{ ml: 1 }}
+                    title="Analyze Spectrum"
+                  >
+                    <Analytics />
+                  </IconButton>
+                  <IconButton
+                    onClick={() => handleDownloadSpectrum(spectrum.id, spectrum.filename)}
+                    color="info"
+                    sx={{ ml: 1 }}
+                    title="Download as JCAMP-DX"
+                  >
+                    <Download />
+                  </IconButton>
+                  <IconButton
                     onClick={() => handleDeleteSpectrum(spectrum.id)}
                     color="error"
                     sx={{ ml: 1 }}
+                    title="Delete Spectrum"
                   >
                     <Delete />
                   </IconButton>
@@ -403,6 +494,28 @@ const Spectra: React.FC = () => {
           )}
         </DialogContent>
         <DialogActions>
+          <Button 
+            startIcon={<Analytics />}
+            variant="contained"
+            onClick={() => {
+              if (selectedSpectrum) {
+                handleAnalyzeSpectrum(selectedSpectrum);
+              }
+            }}
+          >
+            Analyze
+          </Button>
+          <Button
+            startIcon={<Download />}
+            variant="outlined"
+            onClick={() => {
+              if (selectedSpectrum) {
+                handleDownloadSpectrum(selectedSpectrum.id, selectedSpectrum.filename);
+              }
+            }}
+          >
+            Download JDX
+          </Button>
           <Button onClick={() => setViewerOpen(false)}>
             Close
           </Button>

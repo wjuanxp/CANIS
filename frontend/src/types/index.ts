@@ -101,19 +101,20 @@ export interface SpectrumCreate {
 
 // Analysis Types
 export interface Analysis {
-  id: string;
-  spectrum_id: string;
+  id: number;
+  spectrum_id: number;
   method_name: string;
   parameters: Record<string, any>;
   results: Record<string, any>;
-  created_by: string;
+  created_by: number;
   created_at: string;
 }
 
 export interface AnalysisCreate {
-  spectrum_id: string;
+  spectrum_id: number;
   method_name: string;
   parameters: Record<string, any>;
+  results: Record<string, any>;
 }
 
 // Chart/Plot Types

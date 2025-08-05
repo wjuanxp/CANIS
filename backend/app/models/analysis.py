@@ -17,3 +17,4 @@ class Analysis(Base):
     # Relationships
     spectrum = relationship("Spectrum", back_populates="analyses")
     created_by_user = relationship("User", back_populates="analyses")
+    history = relationship("AnalysisHistory", back_populates="analysis", cascade="all, delete-orphan")

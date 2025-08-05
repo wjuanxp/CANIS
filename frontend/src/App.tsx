@@ -30,6 +30,26 @@ const App: React.FC = () => {
             main: '#dc004e',
           },
         },
+        typography: {
+          body1: {
+            fontSize: '24px',
+          },
+          body2: {
+            fontSize: '20px',
+          },
+          h6: {
+            fontSize: '24px',
+          },
+          subtitle1: {
+            fontSize: '24px',
+          },
+          subtitle2: {
+            fontSize: '22px',
+          },
+          caption: {
+            fontSize: '16px',
+          },
+        },
       }),
     [theme]
   );
@@ -60,29 +80,36 @@ const App: React.FC = () => {
     <ThemeProvider theme={muiTheme}>
       <CssBaseline />
       <Router>
-        <Box sx={{ display: 'flex' }}>
-          <Header />
-          <Sidebar />
-          <Box
-            component="main"
-            sx={{
-              flexGrow: 1,
-              p: 3,
-              mt: 8,
-              ml: sidebarOpen ? 30 : 8,
-              transition: 'margin 0.3s ease',
-            }}
-          >
-            <Routes>
-              <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-              <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
-              <Route path="/samples" element={<ProtectedRoute><Samples /></ProtectedRoute>} />
-              <Route path="/spectra" element={<ProtectedRoute><Spectra /></ProtectedRoute>} />
-              <Route path="/analysis" element={<ProtectedRoute><Analysis /></ProtectedRoute>} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </Box>
-        </Box>
+        <Routes>
+          {/* Full-screen Analysis page */}
+          <Route path="/analysis" element={<ProtectedRoute><Analysis /></ProtectedRoute>} />
+          
+          {/* Main layout with sidebar for other pages */}
+          <Route path="*" element={
+            <Box sx={{ display: 'flex' }}>
+              <Header />
+              <Sidebar />
+              <Box
+                component="main"
+                sx={{
+                  flexGrow: 1,
+                  p: 3,
+                  mt: 8,
+                  ml: sidebarOpen ? 30 : 8,
+                  transition: 'margin 0.3s ease',
+                }}
+              >
+                <Routes>
+                  <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                  <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
+                  <Route path="/samples" element={<ProtectedRoute><Samples /></ProtectedRoute>} />
+                  <Route path="/spectra" element={<ProtectedRoute><Spectra /></ProtectedRoute>} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </Box>
+            </Box>
+          } />
+        </Routes>
 
         {/* Notifications */}
         {notifications.map((notification) => (

@@ -4,3 +4,4 @@ from .project import Project
 from .sample import Sample
 from .spectrum import Spectrum
 from .analysis import Analysis
+from .analysis_history import AnalysisHistory

@@ -11,6 +11,11 @@ import {
   Stack
 } from '@mui/material';
 import { Spectrum } from '../types';
+import { 
+  convertWavelengthUnits,
+  getStandardXAxisUnit,
+  detectDataMode
+} from '../utils/analysisAlgorithms';
 
 interface SpectrumViewerProps {
   spectrum: Spectrum;
@@ -28,51 +33,102 @@ const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
       return [];
     }
 
-    // Determine axis labels based on technique
-    const getAxisLabels = (technique: string) => {
-      switch (technique.toLowerCase()) {
-        case 'ir':
-        case 'infrared':
-          return {
-            xaxis: 'Wavenumber (cm⁻¹)',
-            yaxis: 'Transmittance (%)'
-          };
-        case 'raman':
-          return {
-            xaxis: 'Raman Shift (cm⁻¹)',
-            yaxis: 'Intensity (counts)'
-          };
-        case 'uv-vis':
-        case 'uv':
-        case 'vis':
-          return {
-            xaxis: 'Wavelength (nm)',
-            yaxis: 'Absorbance'
-          };
-        case 'libs':
-          return {
-            xaxis: 'Wavelength (nm)',
-            yaxis: 'Intensity (counts)'
-          };
-        case 'x-ray':
-        case 'xrf':
-          return {
-            xaxis: 'Energy (keV)',
-            yaxis: 'Intensity (counts)'
-          };
-        default:
-          return {
-            xaxis: 'X-axis',
-            yaxis: 'Y-axis'
-          };
+    // Handle x-axis unit conversion and proper ordering
+    let xData = [...spectrum.wavelengths];
+    let yData = [...spectrum.intensities];
+    let actualXUnit = '';
+    
+    // Check for XUNITS metadata and convert if needed
+    const xunits = spectrum.acquisition_parameters?.XUNITS || 
+                   spectrum.acquisition_parameters?.xunits || 
+                   spectrum.acquisition_parameters?.xUnits;
+    
+    if (xunits) {
+      const conversionResult = convertWavelengthUnits(xData, xunits, undefined, spectrum.technique);
+      
+      if (conversionResult.wasConverted) {
+        // For all techniques, just convert the data - let Plotly handle ordering with autorange
+        xData = conversionResult.convertedX;
+        // No manual sorting - we'll use autorange: 'reversed' for IR in the layout
+        actualXUnit = conversionResult.actualUnit;
+      } else {
+        actualXUnit = xunits;
       }
+    } else {
+      // Use standard unit for technique if no XUNITS specified
+      const standardUnit = getStandardXAxisUnit(spectrum.technique);
+      actualXUnit = standardUnit.unit;
+    }
+
+    // Determine axis labels based on technique and actual units
+    const getAxisLabels = (technique: string, xUnit: string) => {
+      const techniqueLower = technique.toLowerCase();
+      let xaxis = 'X-axis';
+      let yaxis = 'Y-axis';
+      
+      // Set x-axis label based on actual unit
+      if (xUnit === 'cm⁻¹') {
+        xaxis = techniqueLower.includes('raman') ? 'Raman Shift (cm⁻¹)' : 'Wavenumber (cm⁻¹)';
+      } else if (xUnit.toLowerCase().includes('nm') || xUnit.toLowerCase().includes('nanometer')) {
+        xaxis = 'Wavelength (nm)';
+      } else if (xUnit.toLowerCase().includes('μm') || xUnit.toLowerCase().includes('micrometer')) {
+        xaxis = 'Wavelength (μm)';
+      } else if (xUnit.toLowerCase().includes('kev')) {
+        xaxis = 'Energy (keV)';
+      } else {
+        // Fallback to technique-based labels
+        switch (techniqueLower) {
+          case 'ir':
+          case 'infrared':
+            xaxis = 'Wavenumber (cm⁻¹)';
+            break;
+          case 'raman':
+            xaxis = 'Raman Shift (cm⁻¹)';
+            break;
+          case 'uv-vis':
+          case 'uv':
+          case 'vis':
+            xaxis = 'Wavelength (nm)';
+            break;
+          case 'libs':
+            xaxis = 'Wavelength (nm)';
+            break;
+          case 'x-ray':
+          case 'xrf':
+            xaxis = 'Energy (keV)';
+            break;
+          default:
+            xaxis = 'X-axis';
+        }
+      }
+      
+      // Set y-axis label based on technique and data mode
+      if (['uv-vis', 'uv', 'vis', 'ir', 'infrared'].includes(techniqueLower)) {
+        const dataMode = detectDataMode(yData, technique, spectrum.acquisition_parameters);
+        yaxis = dataMode === 'absorbance' ? 'Absorbance' : 'Transmittance (%)';
+      } else {
+        switch (techniqueLower) {
+          case 'raman':
+            yaxis = 'Intensity (counts)';
+            break;
+          case 'libs':
+          case 'x-ray':
+          case 'xrf':
+            yaxis = 'Intensity (counts)';
+            break;
+          default:
+            yaxis = 'Y-axis';
+        }
+      }
+      
+      return { xaxis, yaxis };
     };
 
-    const labels = getAxisLabels(spectrum.technique);
+    const labels = getAxisLabels(spectrum.technique, actualXUnit);
 
     return [{
-      x: spectrum.wavelengths,
-      y: spectrum.intensities,
+      x: xData,
+      y: yData,
       type: 'scatter' as const,
       mode: 'lines' as const,
       name: spectrum.filename,
@@ -84,45 +140,87 @@ const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
     }];
   }, [spectrum]);
 
+  // Determine actual X-axis unit for both plotData and plotLayout
+  const actualXUnit = useMemo(() => {
+    const xunits = spectrum.acquisition_parameters?.XUNITS || 
+                   spectrum.acquisition_parameters?.xunits || 
+                   spectrum.acquisition_parameters?.xUnits;
+    
+    if (xunits) {
+      const conversionResult = convertWavelengthUnits(spectrum.wavelengths, xunits, undefined, spectrum.technique);
+      return conversionResult.wasConverted ? conversionResult.actualUnit : xunits;
+    } else {
+      const standardUnit = getStandardXAxisUnit(spectrum.technique);
+      return standardUnit.unit;
+    }
+  }, [spectrum]);
+
   const plotLayout = useMemo(() => {
-    const labels = (() => {
-      switch (spectrum.technique.toLowerCase()) {
-        case 'ir':
-        case 'infrared':
-          return {
-            xaxis: 'Wavenumber (cm⁻¹)',
-            yaxis: 'Transmittance (%)'
-          };
-        case 'raman':
-          return {
-            xaxis: 'Raman Shift (cm⁻¹)',
-            yaxis: 'Intensity (counts)'
-          };
-        case 'uv-vis':
-        case 'uv':
-        case 'vis':
-          return {
-            xaxis: 'Wavelength (nm)',
-            yaxis: 'Absorbance'
-          };
-        case 'libs':
-          return {
-            xaxis: 'Wavelength (nm)',
-            yaxis: 'Intensity (counts)'
-          };
-        case 'x-ray':
-        case 'xrf':
-          return {
-            xaxis: 'Energy (keV)',
-            yaxis: 'Intensity (counts)'
-          };
-        default:
-          return {
-            xaxis: 'X-axis',
-            yaxis: 'Y-axis'
-          };
+
+    const getAxisLabels = (technique: string, xUnit: string) => {
+      const techniqueLower = technique.toLowerCase();
+      let xaxis = 'X-axis';
+      let yaxis = 'Y-axis';
+      
+      // Set x-axis label based on actual unit
+      if (xUnit === 'cm⁻¹') {
+        xaxis = techniqueLower.includes('raman') ? 'Raman Shift (cm⁻¹)' : 'Wavenumber (cm⁻¹)';
+      } else if (xUnit.toLowerCase().includes('nm') || xUnit.toLowerCase().includes('nanometer')) {
+        xaxis = 'Wavelength (nm)';
+      } else if (xUnit.toLowerCase().includes('μm') || xUnit.toLowerCase().includes('micrometer')) {
+        xaxis = 'Wavelength (μm)';
+      } else if (xUnit.toLowerCase().includes('kev')) {
+        xaxis = 'Energy (keV)';
+      } else {
+        // Fallback to technique-based labels
+        switch (techniqueLower) {
+          case 'ir':
+          case 'infrared':
+            xaxis = 'Wavenumber (cm⁻¹)';
+            break;
+          case 'raman':
+            xaxis = 'Raman Shift (cm⁻¹)';
+            break;
+          case 'uv-vis':
+          case 'uv':
+          case 'vis':
+            xaxis = 'Wavelength (nm)';
+            break;
+          case 'libs':
+            xaxis = 'Wavelength (nm)';
+            break;
+          case 'x-ray':
+          case 'xrf':
+            xaxis = 'Energy (keV)';
+            break;
+          default:
+            xaxis = 'X-axis';
+        }
       }
-    })();
+      
+      // Set y-axis label based on technique and data mode
+      if (['uv-vis', 'uv', 'vis', 'ir', 'infrared'].includes(techniqueLower)) {
+        const dataMode = detectDataMode(spectrum.intensities, technique, spectrum.acquisition_parameters);
+        yaxis = dataMode === 'absorbance' ? 'Absorbance' : 'Transmittance (%)';
+      } else {
+        switch (techniqueLower) {
+          case 'raman':
+            yaxis = 'Intensity (counts)';
+            break;
+          case 'libs':
+          case 'x-ray':
+          case 'xrf':
+            yaxis = 'Intensity (counts)';
+            break;
+          default:
+            yaxis = 'Y-axis';
+        }
+      }
+      
+      return { xaxis, yaxis };
+    };
+
+    const labels = getAxisLabels(spectrum.technique, actualXUnit);
 
     return {
       title: {
@@ -133,7 +231,9 @@ const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
         title: labels.xaxis,
         showgrid: true,
         gridcolor: '#f0f0f0',
-        zeroline: false
+        zeroline: false,
+        // For IR spectra, reverse the axis so high wavenumbers are on the left
+        autorange: spectrum.technique.toLowerCase().includes('ir') ? 'reversed' : true
       },
       yaxis: {
         title: labels.yaxis,
@@ -147,7 +247,7 @@ const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
       showlegend: false,
       hovermode: 'closest' as const
     };
-  }, [spectrum]);
+  }, [spectrum, actualXUnit]);
 
   const plotConfig = {
     displayModeBar: true,

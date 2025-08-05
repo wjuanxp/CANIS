@@ -51,6 +51,7 @@ interface UploadState {
 const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess, sampleId, samples = [] }) => {
   const theme = useTheme();
   const [selectedSampleId, setSelectedSampleId] = useState<number>(sampleId || 0);
+  const [selectedTechnique, setSelectedTechnique] = useState<string>('');
   const [uploadState, setUploadState] = useState<UploadState>({
     isDragActive: false,
     isUploading: false,
@@ -60,6 +61,16 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess, sampleId, samp
   });
 
   const allowedFormats = ['.csv', '.dx', '.jdx', '.jcamp', '.txt'];
+  const availableTechniques = [
+    { value: '', label: 'Auto-detect (default)' },
+    { value: 'IR', label: 'Infrared (IR)' },
+    { value: 'Raman', label: 'Raman' },
+    { value: 'UV-Vis', label: 'UV-Visible' },
+    { value: 'LIBS', label: 'LIBS' },
+    { value: 'XRF', label: 'X-ray Fluorescence (XRF)' },
+    { value: 'NMR', label: 'NMR' },
+    { value: 'MS', label: 'Mass Spectrometry (MS)' },
+  ];
 
   const validateFile = (file: File): string | null => {
     // Check file extension
@@ -78,8 +89,11 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess, sampleId, samp
   };
 
   const handleFileUpload = useCallback(async (file: File) => {
-    if (!selectedSampleId) {
-      setUploadState(prev => ({ ...prev, error: 'Please select a sample first' }));
+    if (!selectedSampleId || selectedSampleId === 0) {
+      setUploadState(prev => ({ 
+        ...prev, 
+        error: 'Please select a sample before uploading. The spectrum needs to be linked to a sample.' 
+      }));
       return;
     }
 
@@ -101,6 +115,11 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess, sampleId, samp
       const formData = new FormData();
       formData.append('file', file);
       formData.append('sample_id', selectedSampleId.toString());
+      
+      // Add manual technique if selected
+      if (selectedTechnique) {
+        formData.append('manual_technique', selectedTechnique);
+      }
 
       const response = await fetch('/api/v1/spectra/upload', {
         method: 'POST',
@@ -114,10 +133,14 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess, sampleId, samp
 
       const result = await response.json();
       
+      const techniqueMessage = selectedTechnique 
+        ? ` (Technique: ${selectedTechnique})` 
+        : ` (Technique: ${result.technique})`;
+      
       setUploadState(prev => ({
         ...prev,
         isUploading: false,
-        success: `File uploaded successfully! Spectrum ID: ${result.spectrum_id}`,
+        success: `File uploaded successfully! Spectrum ID: ${result.spectrum_id}${techniqueMessage}`,
         uploadProgress: 100,
       }));
 
@@ -163,13 +186,15 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess, sampleId, samp
   return (
     <Box>
       {/* Sample Selection */}
-      {samples.length > 0 && !sampleId && (
+      {/* Debug: Always show sample selection when samples exist */}
+      {samples.length > 0 && (
         <FormControl fullWidth sx={{ mb: 2 }}>
-          <InputLabel>Select Sample</InputLabel>
+          <InputLabel>Select Sample *</InputLabel>
           <Select
             value={selectedSampleId}
             onChange={(e) => setSelectedSampleId(Number(e.target.value))}
-            label="Select Sample"
+            label="Select Sample *"
+            required
           >
             <MenuItem value={0}>
               <em>Choose a sample...</em>
@@ -183,6 +208,35 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess, sampleId, samp
         </FormControl>
       )}
 
+      {/* Technique Selection */}
+      <FormControl fullWidth sx={{ mb: 2 }}>
+        <InputLabel>Technique</InputLabel>
+        <Select
+          value={selectedTechnique}
+          onChange={(e) => setSelectedTechnique(e.target.value)}
+          label="Technique"
+        >
+          {availableTechniques.map((technique) => (
+            <MenuItem key={technique.value} value={technique.value}>
+              {technique.label}
+            </MenuItem>
+          ))}
+        </Select>
+        <Typography variant="caption" color="textSecondary" sx={{ mt: 0.5, ml: 1 }}>
+          {selectedTechnique 
+            ? `Manual selection: ${availableTechniques.find(t => t.value === selectedTechnique)?.label}` 
+            : 'System will try to auto-detect technique from file metadata. Select manually if auto-detection fails.'
+          }
+        </Typography>
+      </FormControl>
+
+      {/* Debug info */}
+      {process.env.NODE_ENV === 'development' && (
+        <Box sx={{ mb: 1, p: 1, bgcolor: 'grey.100', fontSize: '0.8rem' }}>
+          Debug: Samples count: {samples.length}, sampleId prop: {sampleId}, selectedSampleId: {selectedSampleId}
+        </Box>
+      )}
+
       {/* Upload Area */}
       <UploadArea
         theme={theme}
@@ -190,15 +244,38 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess, sampleId, samp
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        onClick={() => document.getElementById('file-input')?.click()}
+        onClick={() => {
+          if (!selectedSampleId || selectedSampleId === 0) {
+            setUploadState(prev => ({ 
+              ...prev, 
+              error: 'Please select a sample before uploading files.' 
+            }));
+            return;
+          }
+          document.getElementById('file-input')?.click();
+        }}
+        sx={{
+          opacity: (!selectedSampleId || selectedSampleId === 0) ? 0.6 : 1,
+          pointerEvents: (!selectedSampleId || selectedSampleId === 0) ? 'auto' : 'auto'
+        }}
       >
         <CloudUpload sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
         <Typography variant="h6" gutterBottom>
-          {uploadState.isDragActive ? 'Drop file here' : 'Drag & drop spectral file or click to browse'}
+          {uploadState.isDragActive 
+            ? 'Drop file here' 
+            : (!selectedSampleId || selectedSampleId === 0)
+              ? 'Select a sample first, then upload files'
+              : 'Drag & drop spectral file or click to browse'
+          }
         </Typography>
         <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
           Supported formats: {allowedFormats.join(', ')}
         </Typography>
+        {(!selectedSampleId || selectedSampleId === 0) && (
+          <Typography variant="body2" color="warning.main" sx={{ mb: 1 }}>
+            ⚠️ Sample selection is required
+          </Typography>
+        )}
         <Typography variant="caption" color="textSecondary">
           Maximum file size: 10MB
         </Typography>

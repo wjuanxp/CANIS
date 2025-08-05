@@ -407,6 +407,7 @@ frontend/
 - **Database**: PostgreSQL via Docker
 - **File Storage**: Local filesystem
 - **Configuration**: Environment variables
+- **Python Environment**: ALWAYS use virtual environment - activate with `source venv/bin/activate` before running any Python commands or scripts
 
 ### Production Environment
 - **Hosting**: Railway.app or Render.com initially

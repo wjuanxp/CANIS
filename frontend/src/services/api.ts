@@ -160,7 +160,15 @@ class ApiService {
   // Samples
   async getSamples(projectId?: string): Promise<Sample[]> {
     const url = projectId ? `/samples/?project_id=${projectId}` : '/samples/';
-    return this.request<Sample[]>('GET', url);
+    try {
+      const response = await this.api.get<Sample[]>(url);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.data?.detail) {
+        throw new Error(error.response.data.detail);
+      }
+      throw error;
+    }
   }
 
   async getSample(sampleId: number): Promise<Sample> {
@@ -182,7 +190,15 @@ class ApiService {
   // Spectra
   async getSpectra(sampleId?: string): Promise<Spectrum[]> {
     const url = sampleId ? `/spectra/?sample_id=${sampleId}` : '/spectra/';
-    return this.request<Spectrum[]>('GET', url);
+    try {
+      const response = await this.api.get<Spectrum[]>(url);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.data?.detail) {
+        throw new Error(error.response.data.detail);
+      }
+      throw error;
+    }
   }
 
   async getSpectrum(spectrumId: number): Promise<Spectrum> {
@@ -214,8 +230,17 @@ class ApiService {
   }
 
   // Analysis
-  async getAnalyses(spectrumId?: string): Promise<Analysis[]> {
-    const url = spectrumId ? `/analysis/?spectrum_id=${spectrumId}` : '/analysis/';
+  async getAnalyses(spectrumId?: string, methodName?: string): Promise<Analysis[]> {
+    let url = '/analysis/';
+    const params = new URLSearchParams();
+    
+    if (spectrumId) params.append('spectrum_id', spectrumId);
+    if (methodName) params.append('method_name', methodName);
+    
+    if (params.toString()) {
+      url += `?${params.toString()}`;
+    }
+    
     return this.request<Analysis[]>('GET', url);
   }
 
@@ -224,11 +249,56 @@ class ApiService {
   }
 
   async createAnalysis(analysisData: AnalysisCreate): Promise<Analysis> {
-    return this.request<Analysis>('POST', '/analysis/', analysisData);
+    try {
+      const response = await this.api.post<Analysis>('/analysis/', analysisData);
+      return response.data;
+    } catch (error: any) {
+      console.error('createAnalysis error:', error);
+      if (error.response?.data?.detail) {
+        throw new Error(error.response.data.detail);
+      }
+      throw error;
+    }
+  }
+
+  async updateAnalysis(analysisId: string, analysisData: Partial<Analysis>): Promise<Analysis> {
+    try {
+      const response = await this.api.put<Analysis>(`/analysis/${analysisId}`, analysisData);
+      return response.data;
+    } catch (error: any) {
+      console.error('updateAnalysis error:', error);
+      if (error.response?.data?.detail) {
+        throw new Error(error.response.data.detail);
+      }
+      throw error;
+    }
   }
 
   async deleteAnalysis(analysisId: string): Promise<void> {
     return this.request<void>('DELETE', `/analysis/${analysisId}`);
+  }
+
+  async getAnalysisHistory(analysisId: string): Promise<any[]> {
+    return this.request<any[]>('GET', `/analysis/${analysisId}/history`);
+  }
+
+  async getLatestAnalysesForSpectrum(spectrumId: string, methods?: string[]): Promise<Analysis[]> {
+    try {
+      let url = `/analysis/spectrum/${spectrumId}/latest`;
+      if (methods && methods.length > 0) {
+        const params = new URLSearchParams();
+        methods.forEach(method => params.append('methods', method));
+        url += `?${params.toString()}`;
+      }
+      const response = await this.api.get<Analysis[]>(url);
+      return response.data;
+    } catch (error: any) {
+      console.error('getLatestAnalysesForSpectrum error:', error);
+      if (error.response?.data?.detail) {
+        throw new Error(error.response.data.detail);
+      }
+      throw error;
+    }
   }
 
   // Analysis methods
@@ -265,6 +335,67 @@ class ApiService {
       responseType: 'blob',
     });
     return response.data;
+  }
+
+  // Export peaks data as CSV
+  async exportPeaksAsCSV(peaks: any[], filename?: string): Promise<void> {
+    const csvContent = this.convertPeaksToCSV(peaks);
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    
+    const link = document.createElement('a');
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename || 'detected_peaks.csv');
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  private convertPeaksToCSV(peaks: any[]): string {
+    if (!peaks || peaks.length === 0) {
+      return 'No peaks data available';
+    }
+
+    // Define CSV headers
+    const headers = [
+      'Position',
+      'Intensity', 
+      'Width',
+      'Prominence',
+      'Integration Area',
+      'Integration Start',
+      'Integration End',
+      'Manually Adjusted'
+    ];
+
+    // Convert peaks to CSV rows
+    const rows = peaks.map(peak => [
+      peak.position?.toFixed(4) || '',
+      peak.intensity?.toFixed(4) || '',
+      peak.width?.toFixed(4) || '',
+      peak.prominence?.toFixed(4) || '',
+      peak.integrationArea?.toFixed(4) || '',
+      peak.integrationStart?.toFixed(4) || '',
+      peak.integrationEnd?.toFixed(4) || '',
+      peak.manuallyAdjusted ? 'Yes' : 'No'
+    ]);
+
+    // Combine headers and rows
+    const csvRows = [headers, ...rows];
+    
+    // Convert to CSV string
+    return csvRows.map(row => 
+      row.map(field => 
+        // Escape fields containing commas, quotes, or newlines
+        typeof field === 'string' && (field.includes(',') || field.includes('"') || field.includes('\n'))
+          ? `"${field.replace(/"/g, '""')}"`
+          : field
+      ).join(',')
+    ).join('\n');
   }
 }
 

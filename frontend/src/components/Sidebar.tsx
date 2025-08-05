@@ -13,8 +13,7 @@ import {
   Dashboard,
   Folder,
   Science,
-  Timeline,
-  Analytics
+  Timeline
 } from '@mui/icons-material';
 
 const drawerWidth = 240;
@@ -24,7 +23,6 @@ const menuItems = [
   { text: 'Projects', icon: <Folder />, path: '/projects' },
   { text: 'Samples', icon: <Science />, path: '/samples' },
   { text: 'Spectra', icon: <Timeline />, path: '/spectra' },
-  { text: 'Analysis', icon: <Analytics />, path: '/analysis' },
 ];
 
 const Sidebar: React.FC = () => {

@@ -23,3 +23,4 @@ class User(Base):
     # Relationships
     owned_projects = relationship("Project", back_populates="owner")
     analyses = relationship("Analysis", back_populates="created_by_user")
+    analysis_changes = relationship("AnalysisHistory", back_populates="changed_by_user")

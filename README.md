@@ -21,6 +21,10 @@ An open-source chemical analytical data management and analysis platform designe
 
 ### Visualization & Analysis
 - **Interactive Spectral Viewer**: Landscape-oriented plots optimized for spectroscopic data
+- **Advanced Analysis Tools**: Baseline correction, peak detection, and spectral integration
+- **Analysis Persistence**: Save and restore analysis results with full audit trail
+- **Manual Save Workflow**: Analysis results saved only when explicitly requested by user
+- **CSV Export**: Export detected peaks and analysis results to CSV format
 - **Technique-Specific Plotting**: Automatic axis labeling based on spectroscopic technique
 - **Metadata Display**: Complete metadata extraction and display from uploaded files
 - **Real-time Visualization**: Responsive plotting with zoom, pan, and export capabilities
@@ -28,6 +32,9 @@ An open-source chemical analytical data management and analysis platform designe
 ### Technical Features
 - **Robust File Parsing**: Advanced JCAMP-DX parser with error handling
 - **Automatic Technique Detection**: Smart algorithm to identify spectroscopic technique
+- **Database Persistence**: Comprehensive analysis result tracking with change history
+- **User Authentication**: JWT-based authentication with user tracking for all operations
+- **Audit Logging**: Complete change history and user activity tracking
 - **Data Validation**: Comprehensive input validation and error reporting
 - **Performance Optimized**: Efficient data handling for large spectral datasets
 
@@ -254,11 +261,14 @@ See [CLAUDE.md](CLAUDE.md) for detailed project roadmap and technical specificat
 - ✅ **React Frontend**: Complete Material-UI interface with responsive design
 - ✅ **FastAPI Backend**: High-performance API with SQLAlchemy ORM
 
-### Phase 2 (Next)
-- 🔄 **Advanced Analytics**: PLS regression, multivariate analysis, peak detection
-- 🔄 **User Authentication**: JWT-based authentication and role-based access control
+### Phase 2 (In Progress 🔄)
+- ✅ **Analysis Persistence**: Database storage and retrieval of analysis results with audit trail
+- ✅ **Peak Detection**: Automatic and manual peak detection with integration capabilities
+- ✅ **User Authentication**: JWT-based authentication with user tracking for analysis operations
+- ✅ **CSV Export**: Export detected peaks and analysis results to CSV format
+- 🔄 **Advanced Analytics**: PLS regression, multivariate analysis, calibration curves
 - 🔄 **Batch Processing**: Multiple file upload and batch analysis capabilities
-- 🔄 **Export Features**: PDF reports, data export in multiple formats
+- 🔄 **Export Features**: PDF reports, comprehensive data export in multiple formats
 - 🔄 **Performance Optimization**: Caching, database indexing, and query optimization
 
 ### Phase 3 (Future)
@@ -271,6 +281,12 @@ See [CLAUDE.md](CLAUDE.md) for detailed project roadmap and technical specificat
 ## Recent Updates
 
 ### Latest Features Added ✨
+- **Analysis Persistence System**: Complete database storage for analysis results with user tracking and audit trail
+- **Manual Save Workflow**: Analysis results only saved when user explicitly clicks "Save Analysis Results" button
+- **State Recovery**: Previously saved analysis results automatically restored when reopening spectra
+- **Peak Detection & Integration**: Advanced peak detection with manual adjustment and integration area calculation
+- **CSV Export**: Export detected peaks table with position, intensity, width, prominence, and integration data
+- **Subtle Notifications**: Non-intrusive notification system positioned in sidebar for better user experience
 - **Enhanced Spectrum Viewer**: Landscape orientation with optimized layout for spectroscopic data
 - **Comprehensive Search**: Search functionality across all metadata, filenames, techniques, and dates
 - **JCAMP-DX Improvements**: Fixed NumPy array handling and improved error messages
